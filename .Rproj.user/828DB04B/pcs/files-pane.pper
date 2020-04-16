@@ -1,0 +1,9 @@
+{
+    "path" : "~/COVID19/COVID19",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}
