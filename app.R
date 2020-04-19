@@ -15,8 +15,13 @@ require(shinyWidgets)
 require(shinydashboard)
 require(shinythemes)
 
+#setwd()
 covid_col = "#820000"
 covid_other_col = "#bf3102"
+
+
+write.csv(read.csv("https://raw.githubusercontent.com/eparker12/nCoV_tracker/master/input_data/coronavirus.csv"),"input_data/coronavirus.csv", row.names = FALSE)
+
 cv_cases = read.csv("input_data/coronavirus.csv")
 countries = read.csv("input_data/countries_codes_and_coordinates.csv")
 worldcountry = geojson_read("input_data/countries.geo.json", what = "sp")
@@ -31,11 +36,8 @@ cumulative_plot = function(cv_aggregated, plot_date) {
     scale_colour_manual(values=c(covid_col)) +
     scale_y_continuous(labels = function(l) {trans = l / 1000; paste0(trans, "K")}) +
     theme(
-      plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+      plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot  
+      legend.position = "none"
     )
   g1
 }
@@ -50,10 +52,7 @@ new_cases_plot = function(cv_aggregated, plot_date) {
     scale_y_continuous(labels = function(l) {trans = l / 1000; paste0(trans, "K")}) +
     theme(
       plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+      legend.position = "none"
     )
   g1
 }
@@ -86,12 +85,10 @@ country_cases_plot = function(cv_cases, start_point=c("Date", "Day of 100th conf
     scale_fill_manual(values=country_cols) +
     theme(
       plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+      legend.position = "none"
     )
-  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  g1
 }
 
 country_cases_cumulative = function(cv_cases, start_point=c("Date", "Day of 100th confirmed case", "Day of 10th death")) {
@@ -120,12 +117,10 @@ country_cases_cumulative = function(cv_cases, start_point=c("Date", "Day of 100t
     scale_colour_manual(values=country_cols) +
     theme(
       plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
+      legend.position = "none"
     )
-  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  g1
 }
 
 # function to plot cumulative cases by region on log10 scale
@@ -150,19 +145,16 @@ country_cases_cumulative_log = function(cv_cases, start_point=c("Date", "Day of 
                              text = paste0("Day ",days_since_death10, "\n", region, ": ",outcome))) +
       xlab("Days since 10th death")
   }
-  
-  g1 = g + geom_line(alpha=0.8) 
-    ylab("cumulative (log10)") + theme_bw() +
-    scale_y_continuous(trans="log10") +
-    scale_colour_manual(values=country_cols) +
-    theme(
-      plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
-      panel.grid.major = element_blank(), # get rid of major grid
-      panel.grid.minor = element_blank(), # get rid of minor grid
-      legend.background = element_rect(fill = "transparent"), # get rid of legend bg
-      legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
-    )
-  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  g1 = g + geom_line(alpha=0.8) +
+      ylab("cumulative (log10)") + theme_bw() + 
+      scale_y_continuous(trans="log10") +
+      scale_colour_manual(values=country_cols) +
+      theme(
+        plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
+        legend.position = "none"
+      )
+  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  g1
 }
 
 ### DATA PROCESSING: COVID-19 ###
@@ -283,11 +275,10 @@ country_cols = cls[1:length(cls_names)]
 names(country_cols) = cls_names
 
 
-
 ui <- bootstrapPage(
-  navbarPage(theme = shinytheme("superhero"), collapsible = TRUE,
+  navbarPage(theme = shinytheme("superhero"), collapsible = TRUE, position = 'static-top',
              "COVID-19", id="nav",
-             tabPanel("Map",
+             tabPanel("",
                       div(class="outer",
                           tags$head(includeCSS("styles.css")),
                           leafletOutput("mymap", width="100%", height="100%"),
@@ -311,48 +302,78 @@ ui <- bootstrapPage(
                                                     value = as.Date(current_date),
                                                     timeFormat = "%d %b", 
                                                     animate=animationOptions(interval = 2000, loop = FALSE))
+                          ),
+                          absolutePanel(id = "controls2", class = "panel panel-default",
+                                        top = 80, right = 20, width = 300, fixed=TRUE,
+                                        draggable = TRUE, height = "auto",
+                                        # span(h4(textOutput("country_clicked_text"), align = "center"), style="color:#000000"),
+                                        pickerInput("level_select", "Level:",
+                                                    choices = c("Global", "Continent", "Country"),
+                                                    selected = c("Country"),
+                                                    multiple = FALSE),
+
+                                        pickerInput("region_select", "Country/Region:",
+                                                    choices = as.character(cv_today_100[order(-cv_today_100$cases),]$country),
+                                                    options = list('actions-box' = TRUE, 'none-selected-text' = "Please make a selection!"),
+                                                    selected = cv_today_100$country,
+                                                    multiple = TRUE),
+
+                                        pickerInput("outcome_select", "Outcome:",
+                                                    choices = c("Cases", "Deaths"),
+                                                    selected = c("Cases"),
+                                                    multiple = FALSE),
+
+                                        pickerInput("start_date", "Plotting start date:",
+                                                    choices = c("Date", "Day of 100th confirmed case", "Day of 10th death"),
+                                                    options = list('actions-box' = TRUE),
+                                                    selected = "Date",
+                                                    multiple = FALSE),
+                                        plotOutput("country_plot",height="130px", width="100%"),
+                                        plotOutput("country_plot_cumulative",height="130px", width="100%"),
+                                        plotOutput("country_plot_cumulative_log",height="130px", width="100%")
+
                           )
                       )
-             ),
+             )#,
              
-             tabPanel("Plot",
-                      
-                      sidebarLayout(
-                        sidebarPanel(
-                          
-                          pickerInput("level_select", "Level:",   
-                                      choices = c("Global", "Continent", "Country"), 
-                                      selected = c("Country"),
-                                      multiple = FALSE),
-                          
-                          pickerInput("region_select", "Country/Region:",   
-                                      choices = as.character(cv_today_100[order(-cv_today_100$cases),]$country), 
-                                      options = list('actions-box' = TRUE, 'none-selected-text' = "Please make a selection!"),
-                                      selected = cv_today_100$country,
-                                      multiple = TRUE), 
-                          
-                          pickerInput("outcome_select", "Outcome:",   
-                                      choices = c("Cases", "Deaths"), 
-                                      selected = c("Cases"),
-                                      multiple = FALSE),
-                          
-                          pickerInput("start_date", "Plotting start date:",   
-                                      choices = c("Date", "Day of 100th confirmed case", "Day of 10th death"), 
-                                      options = list('actions-box' = TRUE),
-                                      selected = "Date",
-                                      multiple = FALSE), 
-                          "Select outcome, regions, and plotting start date from drop-down menues to update plots. Countries with at least 100 confirmed cases are included."
-                        ),
-                        
-                        mainPanel(
-                          tabsetPanel(
-                            tabPanel("New", plotlyOutput("country_plot")),
-                            tabPanel("Cumulative", plotlyOutput("country_plot_cumulative")),
-                            tabPanel("Cumulative (log10)", plotlyOutput("country_plot_cumulative_log"))
-                          )
-                        )
-                      )
-             )
+             # tabPanel("Plot",
+             #          
+             #          sidebarLayout(
+             #            sidebarPanel(
+             #              
+             #              pickerInput("level_select", "Level:",   
+             #                          choices = c("Global", "Continent", "Country"), 
+             #                          selected = c("Country"),
+             #                          multiple = FALSE),
+             #              
+             #              pickerInput("region_select", "Country/Region:",   
+             #                          choices = as.character(cv_today_100[order(-cv_today_100$cases),]$country), 
+             #                          options = list('actions-box' = TRUE, 'none-selected-text' = "Please make a selection!"),
+             #                          selected = cv_today_100$country,
+             #                          multiple = TRUE), 
+             #              
+             #              pickerInput("outcome_select", "Outcome:",   
+             #                          choices = c("Cases", "Deaths"), 
+             #                          selected = c("Cases"),
+             #                          multiple = FALSE),
+             #              
+             #              pickerInput("start_date", "Plotting start date:",   
+             #                          choices = c("Date", "Day of 100th confirmed case", "Day of 10th death"), 
+             #                          options = list('actions-box' = TRUE),
+             #                          selected = "Date",
+             #                          multiple = FALSE), 
+             #              "Select outcome, regions, and plotting start date from drop-down menues to update plots. Countries with at least 100 confirmed cases are included."
+             #            ),
+             #            
+             #            mainPanel(
+             #              tabsetPanel(
+             #                tabPanel("New", plotlyOutput("country_plot")),
+             #                tabPanel("Cumulative", plotlyOutput("country_plot_cumulative")),
+             #                tabPanel("Cumulative (log10)", plotlyOutput("country_plot_cumulative_log"))
+             #              )
+             #            )
+             #          )
+             # )
         )          
 )
 
@@ -519,19 +540,54 @@ server = function(input, output, session) {
   })
   
   # country-specific plots
-  output$country_plot <- renderPlotly({
+  output$country_plot <- renderPlot({
     country_cases_plot(country_reactive_db(), start_point=input$start_date)
   })
   
   # country-specific plots
-  output$country_plot_cumulative <- renderPlotly({
+  output$country_plot_cumulative <- renderPlot({
     country_cases_cumulative(country_reactive_db(), start_point=input$start_date)
   })
   
   # country-specific plots
-  output$country_plot_cumulative_log <- renderPlotly({
+  output$country_plot_cumulative_log <- renderPlot({
     country_cases_cumulative_log(country_reactive_db(), start_point=input$start_date)
   })
+  
+  
+  # output$country_clicked_text <- renderText({
+  #   if (!is.null(input$mymap_marker_click)){
+  #     p <- input$mymap_marker_click  # typo was on this line
+  #     filtered = cv_cases %>% filter(latitude == p$lat, longitude == p$lng)
+  #     paste(unique(filtered$country))
+  #   }
+  #   else{
+  #     paste0('')
+  #   }
+  # })
+  
+  country_clicked <- reactive({
+    p <- input$mymap_marker_click  # typo was on this line
+    filtered = cv_cases %>% filter(latitude == p$lat, longitude == p$lng)
+    filtered$country
+  })
+  
+  continent_clicked <- reactive({
+    p <- input$mymap_marker_click  # typo was on this line
+    filtered = cv_cases %>% filter(latitude == p$lat, longitude == p$lng)
+    print(filtered$continent_level)
+    unique(filtered$continent_level)
+  })
+  
+  observeEvent(input$mymap_marker_click,
+               if (input$level_select == 'Continent'){
+                 updatePickerInput(session = session, inputId = "region_select",
+                                   selected = continent_clicked())
+               }
+               else if (input$level_select == 'Country'){
+               updatePickerInput(session = session, inputId = "region_select",
+                                  selected = country_clicked())
+               }, ignoreInit = TRUE)
   
 }
 
