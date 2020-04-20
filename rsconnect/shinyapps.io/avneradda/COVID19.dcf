@@ -5,9 +5,9 @@ account: avneradda
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2128069
-bundleId: 3023023
+bundleId: 3034908
 url: https://avneradda.shinyapps.io/COVID19/
-when: 1587056250.37848
+when: 1587311467.25758
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: Map.PNG

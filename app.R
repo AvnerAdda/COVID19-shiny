@@ -14,8 +14,10 @@ require(shiny)
 require(shinyWidgets)
 require(shinydashboard)
 require(shinythemes)
+library(DT)
 
-#setwd()
+
+#setwd('C:/Users/avner/Documents/COVID19/COVID19')
 covid_col = "#820000"
 covid_other_col = "#bf3102"
 
@@ -87,8 +89,8 @@ country_cases_plot = function(cv_cases, start_point=c("Date", "Day of 100th conf
       plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
       legend.position = "none"
     )
-  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
-  g1
+  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  #g1
 }
 
 country_cases_cumulative = function(cv_cases, start_point=c("Date", "Day of 100th confirmed case", "Day of 10th death")) {
@@ -119,8 +121,8 @@ country_cases_cumulative = function(cv_cases, start_point=c("Date", "Day of 100t
       plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
       legend.position = "none"
     )
-  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
-  g1
+  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  #g1
 }
 
 # function to plot cumulative cases by region on log10 scale
@@ -153,8 +155,8 @@ country_cases_cumulative_log = function(cv_cases, start_point=c("Date", "Day of 
         plot.background = element_rect(fill = "transparent", color = NA), # bg of the plot
         legend.position = "none"
       )
-  # ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
-  g1
+  ggplotly(g1, tooltip = c("text")) %>% layout(legend = list(font = list(size=11)))
+  #g1
 }
 
 ### DATA PROCESSING: COVID-19 ###
@@ -236,23 +238,22 @@ if (all(cv_large_countries$alpha3 %in% worldcountry$id)==FALSE) { print("Error: 
 cv_large_countries = cv_large_countries[order(cv_large_countries$alpha3),]
 
 # create plotting parameters for map
-bins = c(0,1,10,50,100,500)
-cv_pal <- colorBin("Oranges", domain = cv_large_countries$per100k, bins = bins)
+bins = c(0,1,10,50,100,500,1000)
+cv_pal <- colorBin("Greys", domain = cv_large_countries$per100k, bins = bins)
 plot_map <- worldcountry[worldcountry$id %in% cv_large_countries$alpha3, ]
 
 # creat cv base map 
 basemap = leaflet(plot_map) %>% 
   addTiles() %>% 
-  addProviderTiles("CartoDB.Positron") %>%
+  addProviderTiles("CartoDB.DarkMatterNoLabels") %>%
   addLayersControl(
     position = "bottomright",
     overlayGroups = c("2019-COVID (active)", "2019-COVID (new)", "2019-COVID (cumulative)"),
     options = layersControlOptions(collapsed = FALSE)) %>% 
   hideGroup(c("2019-COVID (new)", "2019-COVID (cumulative)"))  %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  fitBounds(0,-25,90,65) %>%
-  addLegend("bottomright", pal = cv_pal, values = ~cv_large_countries$per100k,
-            title = "<small>Active cases per 100,000</small>") #%>%
+  fitBounds(0,-25,90,65) #%>%
+  # addLegend("bottomright", pal = cv_pal, values = ~cv_large_countries$per100k,
+  #           title = "<small>Active cases per 100,000</small>") #%>%
 
 # sum cv case counts by date
 cv_aggregated = aggregate(cv_cases$cases, by=list(Category=cv_cases$date), FUN=sum)
@@ -285,7 +286,7 @@ ui <- bootstrapPage(
                           
                           absolutePanel(id = "controls", class = "panel panel-default",
                                         top = 80, left = 20, width = 250, fixed=TRUE,
-                                        draggable = TRUE, height = "auto",
+                                        draggable = TRUE, height = 820,
                                         span(h3(htmlOutput("reactive_case_count"), align = "right"), style="color:#bf0202"),
                                         span(h3(textOutput("reactive_death_count"), align = "right"), style="color:#ff0004"),
                                         span(h4(textOutput("reactive_recovered_count"), align = "right"), style="color:#006d2c"),
@@ -294,14 +295,14 @@ ui <- bootstrapPage(
                                         span(h6(textOutput("reactive_country_count"), align = "right"), style="color:#000000"),
                                         plotOutput("epi_curve", height="130px", width="100%"),
                                         plotOutput("cumulative_plot", height="130px", width="100%"),
-                                        
                                         sliderInput("plot_date",
                                                     label = h5("Select mapping date"),
                                                     min = as.Date(cv_min_date,"%Y-%m-%d"),
                                                     max = as.Date(current_date,"%Y-%m-%d"),
                                                     value = as.Date(current_date),
                                                     timeFormat = "%d %b", 
-                                                    animate=animationOptions(interval = 2000, loop = FALSE))
+                                                    animate=animationOptions(interval = 2000, loop = FALSE)),
+                                        DT::dataTableOutput("mytable", height="100px", width="100%")
                           ),
                           absolutePanel(id = "controls2", class = "panel panel-default",
                                         top = 80, right = 20, width = 300, fixed=TRUE,
@@ -328,56 +329,34 @@ ui <- bootstrapPage(
                                                     options = list('actions-box' = TRUE),
                                                     selected = "Date",
                                                     multiple = FALSE),
-                                        plotOutput("country_plot",height="130px", width="100%"),
-                                        plotOutput("country_plot_cumulative",height="130px", width="100%"),
-                                        plotOutput("country_plot_cumulative_log",height="130px", width="100%")
+                                        plotlyOutput("country_plot",height="130px", width="100%"),
+                                        plotlyOutput("country_plot_cumulative",height="130px", width="100%"),
+                                        plotlyOutput("country_plot_cumulative_log",height="130px", width="100%")
 
                           )
                       )
-             )#,
-             
-             # tabPanel("Plot",
-             #          
-             #          sidebarLayout(
-             #            sidebarPanel(
-             #              
-             #              pickerInput("level_select", "Level:",   
-             #                          choices = c("Global", "Continent", "Country"), 
-             #                          selected = c("Country"),
-             #                          multiple = FALSE),
-             #              
-             #              pickerInput("region_select", "Country/Region:",   
-             #                          choices = as.character(cv_today_100[order(-cv_today_100$cases),]$country), 
-             #                          options = list('actions-box' = TRUE, 'none-selected-text' = "Please make a selection!"),
-             #                          selected = cv_today_100$country,
-             #                          multiple = TRUE), 
-             #              
-             #              pickerInput("outcome_select", "Outcome:",   
-             #                          choices = c("Cases", "Deaths"), 
-             #                          selected = c("Cases"),
-             #                          multiple = FALSE),
-             #              
-             #              pickerInput("start_date", "Plotting start date:",   
-             #                          choices = c("Date", "Day of 100th confirmed case", "Day of 10th death"), 
-             #                          options = list('actions-box' = TRUE),
-             #                          selected = "Date",
-             #                          multiple = FALSE), 
-             #              "Select outcome, regions, and plotting start date from drop-down menues to update plots. Countries with at least 100 confirmed cases are included."
-             #            ),
-             #            
-             #            mainPanel(
-             #              tabsetPanel(
-             #                tabPanel("New", plotlyOutput("country_plot")),
-             #                tabPanel("Cumulative", plotlyOutput("country_plot_cumulative")),
-             #                tabPanel("Cumulative (log10)", plotlyOutput("country_plot_cumulative_log"))
-             #              )
-             #            )
-             #          )
-             # )
+             )
         )          
 )
 
 server = function(input, output, session) {
+  
+  output$mytable = DT::renderDataTable({
+    df = (reactive_db() %>% 
+            select(country,cases) %>% 
+            arrange(desc(cases))
+    )
+    datatable(df , options = list(dom = 't', extensions = 'Scroller',
+                                 fixedColumns = TRUE,
+                                 deferRender = TRUE,
+                                 scrollY = 150,
+                                 pageLength = 100,
+                                 scroller = TRUE,
+                                 initComplete = JS(
+                                   "function(settings, json) {",
+                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                   "}")))
+  })
   
   # covid tab 
   output$clean_date_reactive <- renderText({
@@ -456,25 +435,25 @@ server = function(input, output, session) {
   observeEvent(input$plot_date, {
     leafletProxy("mymap") %>% 
       clearMarkers() %>%
-      addProviderTiles("CartoDB.Positron") %>%
+      addProviderTiles("CartoDB.DarkMatterNoLabels") %>%
       clearShapes() %>%
-      addPolygons(data = reactive_polygons(), stroke = FALSE, smoothFactor = 0.1, fillOpacity = 0.5, 
-                  fillColor = ~cv_pal(reactive_db_large()$activeper100k)) %>%
-      addCircleMarkers(data = reactive_db_last24h(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(new_cases)^(1/5),
+      # addPolygons(data = reactive_polygons(), stroke = FALSE, smoothFactor = 0.1, fillOpacity = 0.5,
+      #             fillColor = ~cv_pal(reactive_db_large()$activeper100k)) %>%
+      addCircleMarkers(data = reactive_db_last24h(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(new_cases)^(1/4),
                        fillOpacity = 0.7, color = covid_col, group = "2019-COVID (new)",
                        label = sprintf("<strong>%s (past 24h)</strong><br/>Confirmed cases: %g<br/>Deaths: %d<br/>Recovered: %d<br/>Cases per 100,000: %g", reactive_db_last24h()$country, reactive_db_last24h()$new_cases, reactive_db_last24h()$new_deaths, reactive_db_last24h()$new_recovered, reactive_db_last24h()$newper100k) %>% lapply(htmltools::HTML),
                        labelOptions = labelOptions(
                          style = list("font-weight" = "normal", padding = "3px 8px", "color" = covid_col),
                          textsize = "10px", direction = "auto")) %>%
       
-      addCircleMarkers(data = reactive_db(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(cases)^(1/5), 
+      addCircleMarkers(data = reactive_db(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(cases)^(1/4), 
                        fillOpacity = 0.7, color = covid_col, group = "2019-COVID (cumulative)",
                        label = sprintf("<strong>%s (cumulative)</strong><br/>Confirmed cases: %g<br/>Deaths: %d<br/>Recovered: %d<br/>Cases per 100,000: %g", reactive_db()$country, reactive_db()$cases, reactive_db()$deaths,reactive_db()$recovered, reactive_db()$per100k) %>% lapply(htmltools::HTML),
                        labelOptions = labelOptions(
                          style = list("font-weight" = "normal", padding = "3px 8px", "color" = covid_col),
                          textsize = "10px", direction = "auto")) %>%
       
-      addCircleMarkers(data = reactive_db(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(active_cases)^(1/5), 
+      addCircleMarkers(data = reactive_db(), lat = ~ latitude, lng = ~ longitude, weight = 1, radius = ~(active_cases)^(1/4), 
                        fillOpacity = 0.7, color = covid_col, group = "2019-COVID (active)",
                        label = sprintf("<strong>%s (active)</strong><br/>Confirmed cases: %g<br/>Cases per 100,000: %g<br/><i><small>Excludes individuals known to have<br/>recovered (%g) or died (%g).</small></i>", reactive_db()$country, reactive_db()$active_cases, reactive_db()$activeper100k, reactive_db()$recovered, reactive_db()$deaths) %>% lapply(htmltools::HTML),
                        labelOptions = labelOptions(
@@ -540,17 +519,17 @@ server = function(input, output, session) {
   })
   
   # country-specific plots
-  output$country_plot <- renderPlot({
+  output$country_plot <- renderPlotly({
     country_cases_plot(country_reactive_db(), start_point=input$start_date)
   })
   
   # country-specific plots
-  output$country_plot_cumulative <- renderPlot({
+  output$country_plot_cumulative <- renderPlotly({
     country_cases_cumulative(country_reactive_db(), start_point=input$start_date)
   })
   
   # country-specific plots
-  output$country_plot_cumulative_log <- renderPlot({
+  output$country_plot_cumulative_log <- renderPlotly({
     country_cases_cumulative_log(country_reactive_db(), start_point=input$start_date)
   })
   
@@ -569,13 +548,12 @@ server = function(input, output, session) {
   country_clicked <- reactive({
     p <- input$mymap_marker_click  # typo was on this line
     filtered = cv_cases %>% filter(latitude == p$lat, longitude == p$lng)
-    filtered$country
+    unique(filtered$country)
   })
   
   continent_clicked <- reactive({
     p <- input$mymap_marker_click  # typo was on this line
     filtered = cv_cases %>% filter(latitude == p$lat, longitude == p$lng)
-    print(filtered$continent_level)
     unique(filtered$continent_level)
   })
   
